@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strength of Materials</title>
+  <style>
+    :root { --ink:#172033; --muted:#64748b; --line:#dbe3ee; --panel:#ffffff; --bg:#f3f6fb; --blue:#2563eb; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial, sans-serif; color:var(--ink); background:var(--bg); }
+    header { padding:30px 20px; color:white; background:linear-gradient(120deg,#14213d,#2563eb); }
+    header .wrap, main { max-width:1000px; margin:auto; }
+    h1 { margin:0 0 8px; font-size:clamp(26px,5vw,38px); }
+    header p { margin:0; color:#e5edff; }
+    main { padding:24px 16px 50px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:18px; box-shadow:0 5px 18px #1e293b0a; }
+    h2 { margin:0 0 16px; font-size:21px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+    label { display:block; font-size:14px; font-weight:700; margin-bottom:6px; }
+    input { width:100%; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:16px; }
+    button { border:0; border-radius:8px; padding:11px 16px; background:var(--blue); color:white; font-weight:700; cursor:pointer; }
+    button.secondary { background:#e8efff; color:#1d4ed8; }
+    button:hover { filter:brightness(.96); }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .presets { display:flex; flex-wrap:wrap; gap:8px; }
+    .results { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+    .metric { background:#f8fafc; border:1px solid var(--line); padding:13px; border-radius:10px; }
+    .metric span { display:block; color:var(--muted); font-size:13px; margin-bottom:6px; }
+    .metric strong { font-size:19px; overflow-wrap:anywhere; }
+    #status { margin-top:14px; padding:12px; border-radius:8px; font-weight:700; }
+    #status.safe { background:#dcfce7; color:#166534; }
+    #status.warn { background:#fee2e2; color:#991b1b; }
+    #status.neutral { background:#eff6ff; color:#1e40af; }
+    canvas { width:100%; max-width:100%; background:#fbfdff; border:1px solid var(--line); border-radius:10px; }
+    .note { color:var(--muted); font-size:13px; line-height:1.5; }
+    footer { text-align:center; color:var(--muted); padding:10px 16px 30px; font-size:13px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Strength of Materials</h1>
+    <p>Axial stress, strain, and deformation calculator</p>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2>Example inputs</h2>
+    <div class="presets">
+      <button class="secondary" onclick="loadExample(0)">Steel tension</button>
+      <button class="secondary" onclick="loadExample(1)">Aluminum compression</button>
+      <button class="secondary" onclick="loadExample(2)">Brass wire</button>
+      <button class="secondary" onclick="loadExample(3)">Titanium tie</button>
+      <button class="secondary" onclick="loadExample(4)">Cast iron column</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Axial member calculator</h2>
+    <div class="grid">
+      <div><label for="P">Axial force P (kN)</label><input id="P" type="number" step="any" value="50"></div>
+      <div><label for="L">Length L (m)</label><input id="L" type="number" step="any" value="2"></div>
+      <div><label for="D">Diameter D (mm)</label><input id="D" type="number" step="any" value="20"></div>
+      <div><label for="E">Modulus E (GPa)</label><input id="E" type="number" step="any" value="200"></div>
+      <div><label for="Sy">Yield strength (MPa)</label><input id="Sy" type="number" step="any" value="250"></div>
+    </div>
+    <div class="actions"><button onclick="calculate()">Calculate</button><button class="secondary" onclick="resetForm()">Reset</button></div>
+    <div id="status" class="neutral">Enter the member properties, then select Calculate.</div>
+  </section>
+
+  <section class="card">
+    <h2>Calculated results</h2>
+    <div class="results">
+      <div class="metric"><span>Cross-sectional area</span><strong id="area">—</strong></div>
+      <div class="metric"><span>Axial stress</span><strong id="stress">—</strong></div>
+      <div class="metric"><span>Axial strain</span><strong id="strain">—</strong></div>
+      <div class="metric"><span>Axial deformation</span><strong id="deformation">—</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Visual representation</h2>
+    <canvas id="diagram" width="900" height="260" aria-label="Original and deformed axial member diagram"></canvas>
+    <p class="note">The drawing is schematic. Deformation is visually magnified so the direction can be seen; it is not shown to scale.</p>
+  </section>
+  <section class="card">
+    <h2>Formulae used</h2>
+    <p><strong>Area:</strong> A = πD² / 4</p>
+    <p><strong>Normal stress:</strong> σ = P / A</p>
+    <p><strong>Normal strain:</strong> ε = σ / E</p>
+    <p><strong>Axial deformation:</strong> δ = εL</p>
+    <p class="note">Use consistent units. This calculator converts the supplied kN, m, mm, and GPa values internally.</p>
+  </section>
+</main>
+<footer>Strength of Materials — Educational calculator</footer>
+<script>
+const examples = [
+  {P:50,L:2,D:20,E:200,Sy:250},
+  {P:-120,L:3.5,D:50,E:70,Sy:50},
+  {P:3,L:10,D:5,E:100,Sy:120},
+  {P:85,L:1.5,D:25,E:110,Sy:800},
+  {P:-400,L:1,D:100,E:160,Sy:200}
+];
+function loadExample(i) {
+  const x=examples[i];
+  for (const k of Object.keys(x)) document.getElementById(k).value=x[k];
+  calculate();
+}
+function resetForm() {
+  document.getElementById('P').value=50;
+  document.getElementById('L').value=2;
+  document.getElementById('D').value=20;
+  document.getElementById('E').value=200;
+  document.getElementById('Sy').value=250;
+  ['area','stress','strain','deformation'].forEach(id=>document.getElementById(id).textContent='—');
+  const s=document.getElementById('status'); s.className='neutral'; s.textContent='Enter the member properties, then select Calculate.';
+  draw(0);
+}
+function calculate() {
+  const P=Number(document.getElementById('P').value);
+  const L=Number(document.getElementById('L').value);
+  const D=Number(document.getElementById('D').value);
+  const E=Number(document.getElementById('E').value);
+  const Sy=Number(document.getElementById('Sy').value);
+  if (![P,L,D,E,Sy].every(Number.isFinite) || L<=0 || D<=0 || E<=0 || Sy<=0) {
+    const s=document.getElementById('status'); s.className='warn'; s.textContent='Please enter valid values. Length, diameter, modulus, and yield strength must be greater than zero.'; return;
+  }
+  const A=Math.PI*D*D/4;
+  const stress=P*1000/A;
+  const strain=stress/(E*1000);
+  const delta=strain*L*1000;
+  document.getElementById('area').textContent=A.toFixed(2)+' mm²';
+  document.getElementById('stress').textContent=stress.toFixed(2)+' MPa';
+  document.getElementById('strain').textContent=strain.toFixed(6)+' mm/mm';
+  document.getElementById('deformation').textContent=(delta>=0?'+':'')+delta.toFixed(3)+' mm';
+  const failed=Math.abs(stress)>Sy;
+  const s=document.getElementById('status');
+  s.className=failed?'warn':'safe';
+  s.textContent=failed?'Yield strength exceeded: |σ| is greater than the yield strength.':'Within the specified yield strength.';
+  draw(delta);
+}
+function draw(delta) {
+  const c=document.getElementById('diagram'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.font='bold 18px Arial'; ctx.fillStyle='#172033';
+  ctx.fillText('Original member',35,35); ctx.fillText('Deformed member (schematic)',35,150);
+  const x=160, y1=65, y2=180, w=560, h=36;
+  ctx.fillStyle='#94a3b8'; ctx.fillRect(x,y1,w,h);
+  ctx.fillStyle='#475569'; ctx.fillRect(x-12,y1-8,12,h+16); ctx.fillRect(x+w,y1-8,12,h+16);
+  const shift=Math.max(-90,Math.min(90,delta*35));
+  ctx.fillStyle=delta<0?'#dc2626':'#2563eb';
+  ctx.fillRect(x,y2,w+shift,h);
+  ctx.fillStyle='#475569'; ctx.fillRect(x-12,y2-8,12,h+16);
+  ctx.fillRect(x+w+shift,y2-8,12,h+16);
+  ctx.fillStyle='#64748b'; ctx.font='14px Arial';
+  ctx.fillText('Fixed end',x-8,245);
+  ctx.fillText(delta>0?'Elongation':delta<0?'Shortening':'No deformation',x+220,245);
+}
+draw(0);
+</script>
+</body>
+</html>
