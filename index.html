@@ -148,7 +148,7 @@ function draw(delta) {
   ctx.fillStyle='#94a3b8'; ctx.fillRect(x,y1,w,h);
   ctx.fillStyle='#475569'; ctx.fillRect(x-12,y1-8,12,h+16); ctx.fillRect(x+w,y1-8,12,h+16);
   const shift=Math.max(-90,Math.min(90,delta*35));
-  ctx.fillStyle=failed?'#dc2626':'#2563eb';
+ctx.fillStyle=failed?'#dc2626':'#2563eb';
   ctx.fillRect(x,y2,w+shift,h);
   ctx.fillStyle='#475569'; ctx.fillRect(x-12,y2-8,12,h+16);
   ctx.fillRect(x+w+shift,y2-8,12,h+16);
